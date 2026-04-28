@@ -1,14 +1,10 @@
 import * as React from "react";
 import {
   Alert,
-  Button,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from "react-native";
 
@@ -40,175 +36,212 @@ const firebaseConfig = {
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
+/* ================= LOGIN ================= */
 function HomeScreen({ navigation }) {
   const [email, setEmail] = React.useState("");
   const [senha, setSenha] = React.useState("");
 
   const fazerLogin = async () => {
-    if (!email || !senha) {
-      Alert.alert("Erro", "Preencha email e senha");
-      return;
-    }
+  if (!email || !senha) {
+    Alert.alert("Erro", "Preencha email e senha");
+    return;
+  }
 
-    try {
-      await signInWithEmailAndPassword(auth, email, senha);
+  try {
+    const userCredential = await signInWithEmailAndPassword(auth, email, senha);
 
-      if (Platform.OS === "web") {
-        window.alert("Sucesso: Login realizado!");
-        navigation.replace("Dinheiro");
-      } else {
-        Alert.alert("Sucesso", "Login realizado!", [
-          {
-            text: "OK",
-            onPress: () => navigation.replace("Dinheiro"),
-          },
-        ]);
-      }
-    } catch (error) {
-      Alert.alert("Erro no login", error.message);
-    }
-  };
+    console.log("LOGADO:", userCredential.user.email); // DEBUG
 
+    navigation.replace("Dinheiro");
+
+  } catch (error) {
+    console.log("ERRO LOGIN:", error.code);
+    Alert.alert("Erro no login", error.message);
+  }
+};
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={{ flex: 1 }}
-    >
-      <ScrollView contentContainerStyle={styles.container}>
-        <Image
-          style={styles.img}
-          source={{
-            uri: "https://cdn-icons-png.flaticon.com/512/1144/1144811.png",
-          }}
-        />
+    <View style={styles.containerApp}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Bem-vindo</Text>
+        <Text style={styles.headerSubtitle}>Faça seu login</Text>
+      </View>
 
-        <Text style={styles.text}>Email</Text>
+      <View style={styles.mainCard}>
+        <Text style={styles.sectionTitle}>Acessar conta</Text>
+
+        <Text style={styles.label}>Email</Text>
         <TextInput
-          style={styles.input}
+          style={styles.inputModern}
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"
-          keyboardType="email-address"
         />
 
-        <Text style={styles.text}>Senha</Text>
+        <Text style={styles.label}>Senha</Text>
         <TextInput
-          style={styles.input}
+          style={styles.inputModern}
           value={senha}
           onChangeText={setSenha}
           secureTextEntry
         />
 
-        <View style={styles.buttonContainer}>
-          <Button title="Login" onPress={fazerLogin} />
-        </View>
+        <TouchableOpacity style={styles.primaryButton} onPress={fazerLogin}>
+          <Text style={styles.primaryButtonText}>Login</Text>
+        </TouchableOpacity>
 
-        <View style={styles.buttonContainer}>
-          <Button
-            color="red"
-            title="Cadastrar-se"
-            onPress={() => navigation.navigate("Cadastro")}
-          />
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+        <TouchableOpacity
+          style={styles.secondaryButton}
+          onPress={() => navigation.navigate("Cadastro")}
+        >
+          <Text style={styles.secondaryButtonText}>
+            Criar nova conta
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 }
 
+/* ================= CADASTRO ================= */
 function CadastroScreen({ navigation }) {
   const [email, setEmail] = React.useState("");
   const [senha, setSenha] = React.useState("");
 
-  const cadastrar = async () => {
-    if (!email || !senha) {
-      Alert.alert("Erro", "Preencha email e senha");
-      return;
-    }
+const cadastrar = async () => {
+  if (!email || !senha) {
+    Alert.alert("Erro", "Preencha email e senha");
+    return;
+  }
 
-    try {
-      await createUserWithEmailAndPassword(auth, email, senha);
+  try {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
 
-      if (Platform.OS === "web") {
-        window.alert("Sucesso: Cadastro realizado!");
+    console.log("CADASTRADO:", userCredential.user.email);
 
-        navigation.replace("Dinheiro");
-      } else {
-        Alert.alert("Sucesso", "Cadastro realizado!", [
-          {
-            text: "OK",
-            onPress: () => navigation.replace("Dinheiro"),
-          },
-        ]);
-      }
-    } catch (error) {
-      console.log("ERRO FIREBASE:", error.code);
-      Alert.alert("Erro no cadastro", error.code);
-    }
-  };
+    Alert.alert("Sucesso", "Cadastro realizado!");
+
+    navigation.replace("Home");
+
+  } catch (error) {
+    console.log("ERRO CADASTRO:", error.code);
+    Alert.alert("Erro no cadastro", error.message);
+  }
+};
+
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={{ flex: 1 }}
-    >
-      <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.text}>Email</Text>
+    <View style={styles.containerApp}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Cadastro</Text>
+        <Text style={styles.headerSubtitle}>Crie sua conta</Text>
+      </View>
+
+      <View style={styles.mainCard}>
+        <Text style={styles.sectionTitle}>Novo usuário</Text>
+
+        <Text style={styles.label}>Email</Text>
         <TextInput
-          style={styles.input}
+          style={styles.inputModern}
           value={email}
           onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
         />
 
-        <Text style={styles.text}>Senha</Text>
+        <Text style={styles.label}>Senha</Text>
         <TextInput
-          style={styles.input}
+          style={styles.inputModern}
           value={senha}
           onChangeText={setSenha}
           secureTextEntry
         />
 
-        <View style={styles.buttonContainer}>
-          <Button title="Cadastrar" onPress={cadastrar} />
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+        <TouchableOpacity style={styles.primaryButton} onPress={cadastrar}>
+          <Text style={styles.primaryButtonText}>Cadastrar</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 }
 
-/* ================= DADOS ================= */
+/* ================= MOEDAS ================= */
 function DinheiroScreen() {
   const [cotacao, setCotacao] = React.useState({});
 
-  React.useEffect(() => {
+  const carregarDados = () => {
     fetch("https://economia.awesomeapi.com.br/json/all")
       .then((res) => res.json())
-      .then(setCotacao)
-      .catch((err) => console.log(err));
+      .then(setCotacao);
+  };
+
+  React.useEffect(() => {
+    carregarDados();
   }, []);
 
-  return (
-    <ScrollView style={styles.scrollContainer}>
-      <Text style={styles.headerText}>Cotação de Moedas</Text>
+  const moedas = ["USD", "EUR", "MXN"];
 
-      {Object.values(cotacao).map((item, index) => (
-        <View key={index} style={styles.card}>
-          <Text style={styles.cardTitle}>{item.name}</Text>
-          <Text>Compra: {item.bid}</Text>
-          <Text>Venda: {item.ask}</Text>
-        </View>
-      ))}
-    </ScrollView>
+  return (
+    <View style={styles.container}>
+      {/* HEADER */}
+      <View style={styles.top}>
+        <Text style={styles.title}>Conversor de</Text>
+        <Text style={styles.title}>Moedas <Text style={{color:"#ffd166"}}>Pro</Text></Text>
+      </View>
+
+      {/* CARD PRINCIPAL */}
+      <View style={styles.cardMain}>
+        <Text style={styles.cardTitle}>Cotação Atual</Text>
+        <Text style={styles.cardSub}>
+          Última atualização: {new Date().toLocaleTimeString()}
+        </Text>
+
+        {moedas.map((key, i) => {
+          const item = cotacao[key];
+          if (!item) return null;
+
+          const variacao = parseFloat(item.pctChange);
+          const up = variacao >= 0;
+
+          return (
+            <View key={i} style={styles.cardCurrency}>
+              
+              {/* ESQUERDA */}
+              <View style={styles.left}>
+                <View style={styles.flag} />
+                <View>
+                  <Text style={styles.code}>{item.code} / BRL</Text>
+                  <Text style={styles.desc}>
+                    1 {item.name.split("/")[0]}
+                  </Text>
+                </View>
+              </View>
+
+              {/* DIREITA */}
+              <View style={{ alignItems: "flex-end" }}>
+                <Text style={styles.value}>
+                  R$ {parseFloat(item.bid).toFixed(2)}
+                </Text>
+                <Text style={{ color: up ? "#2ecc71" : "#e74c3c", fontSize: 12 }}>
+                  {up ? "▲" : "▼"} {Math.abs(variacao).toFixed(2)}%
+                </Text>
+              </View>
+            </View>
+          );
+        })}
+
+        {/* BOTÃO */}
+        <TouchableOpacity style={styles.btn} onPress={carregarDados}>
+          <Text style={styles.btnText}>Atualizar Cotações</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 }
 
-/* ================= NAVIGATION ================= */
+/* ================= NAV ================= */
 const Stack = createNativeStackNavigator();
 
 export default function App() {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Home">
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Cadastro" component={CadastroScreen} />
         <Stack.Screen name="Dinheiro" component={DinheiroScreen} />
@@ -217,61 +250,229 @@ export default function App() {
   );
 }
 
-/* ================= STYLE ================= */
+/* ================= ESTILOS ================= */
 const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
+  /* ================= GERAIS (ANTIGOS) ================= */
+  containerApp: {
+    flex: 1,
+    backgroundColor: "#f2f4f7",
+  },
+
+  header: {
+    backgroundColor: "#2f3e9e",
+    paddingTop: 60,
+    paddingBottom: 40,
     alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 20,
+    borderBottomLeftRadius: 25,
+    borderBottomRightRadius: 25,
   },
-  scrollContainer: {
-    padding: 20,
-    backgroundColor: "#f5f5f5",
-  },
-  input: {
-    height: 50,
-    width: "80%",
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    marginVertical: 10,
-    paddingHorizontal: 15,
-    backgroundColor: "#fff",
-  },
-  img: {
-    width: 120,
-    height: 120,
-    marginBottom: 30,
-  },
-  text: {
-    fontSize: 16,
-    alignSelf: "flex-start",
-    marginLeft: "10%",
-    fontWeight: "bold",
-    color: "#333",
-  },
-  headerText: {
+
+  headerTitle: {
+    color: "#fff",
     fontSize: 22,
     fontWeight: "bold",
-    marginBottom: 20,
+  },
+
+  headerSubtitle: {
+    color: "#ffd166",
+    fontSize: 16,
+  },
+
+  mainCard: {
+    backgroundColor: "#fff",
+    marginHorizontal: 20,
+    marginTop: -30,
+    borderRadius: 20,
+    padding: 20,
+    elevation: 5,
+  },
+
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
     textAlign: "center",
   },
-  buttonContainer: {
-    width: "80%",
-    marginTop: 15,
-  },
-  card: {
-    backgroundColor: "#fff",
-    padding: 15,
+
+  sectionSubtitle: {
+    fontSize: 12,
+    color: "#888",
+    textAlign: "center",
     marginBottom: 15,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#e0e0e0",
   },
-  cardTitle: {
+
+  label: {
+    fontSize: 14,
+    color: "#444",
+    marginTop: 10,
+  },
+
+  inputModern: {
+    backgroundColor: "#f9fafc",
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 5,
+    borderWidth: 1,
+    borderColor: "#eee",
+  },
+
+  primaryButton: {
+    backgroundColor: "#4fb6a3",
+    padding: 15,
+    borderRadius: 25,
+    marginTop: 20,
+    alignItems: "center",
+  },
+
+  primaryButtonText: {
+    color: "#fff",
     fontWeight: "bold",
     fontSize: 16,
-    marginBottom: 5,
+  },
+
+  secondaryButton: {
+    marginTop: 15,
+    alignItems: "center",
+  },
+
+  secondaryButtonText: {
+    color: "#2f3e9e",
+    fontWeight: "bold",
+  },
+
+  currencyCard: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#f9fafc",
+    padding: 15,
+    borderRadius: 15,
+    marginBottom: 10,
+  },
+
+  currencyTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+
+  currencySubtitle: {
+    fontSize: 12,
+    color: "#777",
+  },
+
+  price: {
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+
+  variation: {
+    fontSize: 12,
+    fontWeight: "bold",
+  },
+
+  /* ================= NOVOS (TELA IGUAL À IMAGEM) ================= */
+
+  container: {
+    flex: 1,
+    backgroundColor: "#f2f3f7",
+  },
+
+  top: {
+    backgroundColor: "#2f3e9e",
+    paddingTop: 70,
+    paddingBottom: 60,
+    alignItems: "center",
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+  },
+
+  title: {
+    color: "#fff",
+    fontSize: 24,
+    fontWeight: "bold",
+  },
+
+  cardMain: {
+    backgroundColor: "#fff",
+    marginHorizontal: 20,
+    marginTop: -40,
+    borderRadius: 20,
+    padding: 20,
+
+    // sombra iOS
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+
+    // sombra Android
+    elevation: 5,
+  },
+
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    textAlign: "center",
+  },
+
+  cardSub: {
+    fontSize: 12,
+    color: "#777",
+    textAlign: "center",
+    marginBottom: 15,
+  },
+
+  cardCurrency: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#f8f9fb",
+    padding: 15,
+    borderRadius: 15,
+    marginBottom: 12,
+  },
+
+  left: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  flag: {
+    width: 35,
+    height: 35,
+    borderRadius: 20,
+    backgroundColor: "#ddd", // placeholder
+    marginRight: 10,
+  },
+
+  code: {
+    fontWeight: "bold",
+    fontSize: 15,
+  },
+
+  desc: {
+    fontSize: 12,
+    color: "#777",
+  },
+
+  value: {
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+
+  btn: {
+    backgroundColor: "#5db1a8",
+    padding: 16,
+    borderRadius: 30,
+    alignItems: "center",
+    marginTop: 10,
+  },
+
+  btnText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
   },
 });
+
+// Ccueca@gmail.com
+// TRALALA
