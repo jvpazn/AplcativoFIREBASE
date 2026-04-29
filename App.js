@@ -1,12 +1,14 @@
 import * as React from "react";
 import {
   Alert,
+  Image,
+  Platform, 
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
-  Image,
 } from "react-native";
 
 import "react-native-gesture-handler";
@@ -42,17 +44,34 @@ function HomeScreen({ navigation }) {
 
   const fazerLogin = async () => {
     if (!email || !senha) {
-      Alert.alert("Erro", "Preencha email e senha");
+      if (Platform.OS === "web") {
+        window.alert("Erro: Preencha email e senha");
+      } else {
+        Alert.alert("Erro", "Preencha email e senha");
+      }
       return;
     }
 
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, senha);
-      console.log("LOGADO:", userCredential.user.email); // DEBUG
-      navigation.replace("Dinheiro");
+      await signInWithEmailAndPassword(auth, email, senha);
+
+      if (Platform.OS === "web") {
+        window.alert("Login realizado com sucesso!");
+        navigation.replace("Dinheiro");
+      } else {
+        Alert.alert("Sucesso", "Login realizado com sucesso!", [
+          { text: "OK", onPress: () => navigation.replace("Dinheiro") },
+        ]);
+      }
     } catch (error) {
-      console.log("ERRO LOGIN:", error.code);
-      Alert.alert("Erro no login", error.message);
+      console.log("ERRO COMPLETO:", error);
+      const msgErro = error?.message || "Erro desconhecido";
+
+      if (Platform.OS === "web") {
+        window.alert("Erro: " + msgErro);
+      } else {
+        Alert.alert("Erro", msgErro);
+      }
     }
   };
 
@@ -71,7 +90,6 @@ function HomeScreen({ navigation }) {
           style={styles.inputModern}
           value={email}
           onChangeText={setEmail}
-          autoCapitalize="none"
         />
 
         <Text style={styles.label}>Senha</Text>
@@ -90,9 +108,7 @@ function HomeScreen({ navigation }) {
           style={styles.secondaryButton}
           onPress={() => navigation.navigate("Cadastro")}
         >
-          <Text style={styles.secondaryButtonText}>
-            Criar nova conta
-          </Text>
+          <Text style={styles.secondaryButtonText}>Criar nova conta</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -105,18 +121,34 @@ function CadastroScreen({ navigation }) {
 
   const cadastrar = async () => {
     if (!email || !senha) {
-      Alert.alert("Erro", "Preencha email e senha");
+      if (Platform.OS === "web") {
+        window.alert("Erro: Preencha email e senha");
+      } else {
+        Alert.alert("Erro", "Preencha email e senha");
+      }
       return;
     }
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
-      console.log("CADASTRADO:", userCredential.user.email);
-      Alert.alert("Sucesso", "Cadastro realizado!");
-      navigation.replace("Home");
+      await createUserWithEmailAndPassword(auth, email, senha);
+
+      if (Platform.OS === "web") {
+        window.alert("Cadastro realizado com sucesso!");
+        navigation.replace("Home");
+      } else {
+        Alert.alert("Sucesso", "Cadastro realizado com sucesso!", [
+          { text: "OK", onPress: () => navigation.replace("Home") },
+        ]);
+      }
     } catch (error) {
-      console.log("ERRO CADASTRO:", error.code);
-      Alert.alert("Erro no cadastro", error.message);
+      console.log("ERRO COMPLETO:", error);
+      const msgErro = error?.message || "Erro desconhecido";
+
+      if (Platform.OS === "web") {
+        window.alert("Erro: " + msgErro);
+      } else {
+        Alert.alert("Erro", msgErro);
+      }
     }
   };
 
@@ -157,28 +189,37 @@ function DinheiroScreen() {
   const [cotacao, setCotacao] = React.useState({});
 
   const carregarDados = () => {
-    fetch("https://economia.awesomeapi.com.br/last/USD-BRL,EUR-BRL,MXN-BRL")
+    fetch("https://economia.awesomeapi.com.br/json/all")
       .then((res) => res.json())
       .then(setCotacao)
-      .catch((error) => console.log("Erro ao buscar moedas:", error));
+      .catch((error) => console.log(error));
   };
 
   React.useEffect(() => {
     carregarDados();
   }, []);
 
-  const moedas = ["USDBRL", "EURBRL", "MXNBRL"];
-
   const getFlagUrl = (code) => {
-    if (code === "USD") return "https://flagcdn.com/w80/us.png";
-    if (code === "EUR") return "https://flagcdn.com/w80/eu.png";
-    if (code === "MXN") return "https://flagcdn.com/w80/mx.png";
-    return "https://flagcdn.com/w80/br.png";
+    const map = {
+      USD: "us",
+      EUR: "eu",
+      GBP: "gb",
+      ARS: "ar",
+      CAD: "ca",
+      AUD: "au",
+      JPY: "jp",
+      CHF: "ch",
+      CNY: "cn",
+      ILS: "il",
+    };
+
+    return map[code]
+      ? `https://flagcdn.com/w80/${map[code]}.png`
+      : "https://flagcdn.com/w80/br.png";
   };
 
   return (
-    <View style={styles.container}>
-      {/* HEADER */}
+    <ScrollView style={styles.container}>
       <View style={styles.top}>
         <Text style={styles.title}>Conversor de</Text>
         <Text style={styles.title}>
@@ -186,61 +227,72 @@ function DinheiroScreen() {
         </Text>
       </View>
 
-      {/* CARD PRINCIPAL */}
       <View style={styles.cardMainMoedas}>
         <Text style={styles.cardTitle}>Cotação Atual</Text>
+
         <Text style={styles.cardSub}>
-          Última atualização: {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          Atualizado:{" "}
+          {new Date().toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
         </Text>
 
-        {moedas.map((key, i) => {
-          const item = cotacao[key];
-          
-          if (!item) return null;
+        {Object.keys(cotacao)
+          .sort()
+          .map((key, i) => {
+            const item = cotacao[key];
+            if (!item) return null;
 
-          const variacao = parseFloat(item.pctChange);
-          const up = variacao >= 0;
+            const variacao = parseFloat(item.pctChange);
+            const up = variacao >= 0;
 
-          return (
-            <View key={i} style={styles.cardCurrency}>
-              
-              <View style={styles.left}>
-                <View style={styles.flagsContainer}>
-                  <Image 
-                    source={{ uri: "https://flagcdn.com/w80/br.png" }} 
-                    style={styles.flagBack} 
-                  />
-                  <Image 
-                    source={{ uri: getFlagUrl(item.code) }} 
-                    style={styles.flagFront} 
-                  />
+            return (
+              <View key={i} style={styles.cardCurrency}>
+                <View style={styles.left}>
+                  <View style={styles.flagsContainer}>
+                    <Image
+                      source={{ uri: "https://flagcdn.com/w80/br.png" }}
+                      style={styles.flagBack}
+                    />
+                    <Image
+                      source={{ uri: getFlagUrl(item.code) }}
+                      style={styles.flagFront}
+                    />
+                  </View>
+
+                  <View>
+                    <Text style={styles.code}>{item.code} / BRL</Text>
+                    <Text style={styles.desc}>1 {item.name.split("/")[0]}</Text>
+                  </View>
                 </View>
 
-                <View>
-                  <Text style={styles.code}>{item.code} / BRL</Text>
-                  <Text style={styles.desc}>
-                    1 {item.name.split("/")[0]}
+                <View style={{ alignItems: "flex-end" }}>
+                  <Text style={styles.value}>
+                    R$ {parseFloat(item.bid).toFixed(2).replace(".", ",")}
+                  </Text>
+
+                  <Text
+                    style={{
+                      color: up ? "#2ecc71" : "#e74c3c",
+                      fontSize: 12,
+                      fontWeight: "bold",
+                      marginTop: 3,
+                    }}
+                  >
+                    {up ? "▲" : "▼"}{" "}
+                    {Math.abs(variacao).toFixed(2).replace(".", ",")}%
                   </Text>
                 </View>
               </View>
-
-              <View style={{ alignItems: "flex-end" }}>
-                <Text style={styles.value}>
-                  R$ {parseFloat(item.bid).toFixed(2).replace('.', ',')}
-                </Text>
-                <Text style={{ color: up ? "#2ecc71" : "#e74c3c", fontSize: 12, fontWeight: "bold", marginTop: 3 }}>
-                  {up ? "▲" : "▼"} {Math.abs(variacao).toFixed(2).replace('.', ',')}%
-                </Text>
-              </View>
-            </View>
-          );
-        })}
+            );
+          })}
 
         <TouchableOpacity style={styles.btn} onPress={carregarDados}>
           <Text style={styles.btnText}>Atualizar Cotações</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -259,10 +311,8 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  containerApp: {
-    flex: 1,
-    backgroundColor: "#f2f4f7",
-  },
+  containerApp: { flex: 1, backgroundColor: "#f2f4f7" },
+
   header: {
     backgroundColor: "#2f3e9e",
     paddingTop: 60,
@@ -271,42 +321,34 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 25,
     borderBottomRightRadius: 25,
   },
-  headerTitle: {
-    color: "#fff",
-    fontSize: 22,
-    fontWeight: "bold",
-  },
-  headerSubtitle: {
-    color: "#ffd166",
-    fontSize: 16,
-  },
+
+  headerTitle: { color: "#fff", fontSize: 22, fontWeight: "bold" },
+  headerSubtitle: { color: "#ffd166", fontSize: 16 },
+
   mainCard: {
     backgroundColor: "#fff",
-    marginHorizontal: 20,
+    margin: 20,
     marginTop: -30,
     borderRadius: 20,
     padding: 20,
     elevation: 5,
   },
+
   sectionTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    marginBottom: 10,
     textAlign: "center",
   },
-  label: {
-    fontSize: 14,
-    color: "#444",
-    marginTop: 10,
-  },
+
+  label: { marginTop: 10 },
+
   inputModern: {
     backgroundColor: "#f9fafc",
     borderRadius: 12,
     padding: 12,
     marginTop: 5,
-    borderWidth: 1,
-    borderColor: "#eee",
   },
+
   primaryButton: {
     backgroundColor: "#4fb6a3",
     padding: 15,
@@ -314,139 +356,73 @@ const styles = StyleSheet.create({
     marginTop: 20,
     alignItems: "center",
   },
-  primaryButtonText: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-  secondaryButton: {
-    marginTop: 15,
-    alignItems: "center",
-  },
-  secondaryButtonText: {
-    color: "#2f3e9e",
-    fontWeight: "bold",
-  },
-  container: {
-    flex: 1,
-    backgroundColor: "#f2f3f7",
-  },
+
+  primaryButtonText: { color: "#fff", fontWeight: "bold" },
+
+  secondaryButton: { marginTop: 15, alignItems: "center" },
+  secondaryButtonText: { color: "#2f3e9e" },
+
+  container: { flex: 1, backgroundColor: "#f2f3f7" },
+
   top: {
-    backgroundColor: "#1c2854", 
+    backgroundColor: "#1c2854",
     paddingTop: 70,
     paddingBottom: 60,
     alignItems: "center",
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
   },
-  title: {
-    color: "#fff",
-    fontSize: 28,
-    fontWeight: "bold",
-    fontFamily: "serif", 
-    fontStyle: "italic",
-  },
-  titlePro: {
-    color: "#e89a74", 
-  },
+
+  title: { color: "#fff", fontSize: 28, fontWeight: "bold" },
+  titlePro: { color: "#e89a74" },
+
   cardMainMoedas: {
     backgroundColor: "#fff",
-    marginHorizontal: 20,
+    margin: 20,
     marginTop: -40,
     borderRadius: 25,
     padding: 20,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 5,
   },
-  cardTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    textAlign: "center",
-  },
-  cardSub: {
-    fontSize: 13,
-    color: "#888",
-    textAlign: "center",
-    marginBottom: 20,
-    marginTop: 4,
-  },
+
+  cardTitle: { textAlign: "center", fontSize: 20, fontWeight: "bold" },
+  cardSub: { textAlign: "center", color: "#888", marginBottom: 20 },
+
   cardCurrency: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: "#ffffff",
-    paddingVertical: 12,
-    paddingHorizontal: 15,
-    borderRadius: 20,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#f0f0f0", 
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 2,
+    padding: 12,
+    borderRadius: 15,
+    marginBottom: 10,
+    backgroundColor: "#fff",
   },
-  left: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  flagsContainer: {
-    width: 44,
-    height: 44,
-    marginRight: 12,
-    justifyContent: "center",
-  },
+
+  left: { flexDirection: "row", alignItems: "center" },
+
+  flagsContainer: { width: 44, height: 44, marginRight: 10 },
+
   flagBack: {
     width: 28,
     height: 28,
-    borderRadius: 14,
     position: "absolute",
     bottom: 0,
     right: 0,
-    borderWidth: 2,
-    borderColor: "#fff", 
   },
-  flagFront: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    position: "absolute",
-    top: 0,
-    left: 0,
-    borderWidth: 2,
-    borderColor: "#fff",
-    zIndex: 1,
-  },
-  code: {
-    fontWeight: "bold",
-    fontSize: 15,
-    color: "#222",
-  },
-  desc: {
-    fontSize: 12,
-    color: "#777",
-    marginTop: 2,
-  },
-  value: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#222",
-  },
+  flagFront: { width: 28, height: 28, position: "absolute", top: 0, left: 0 },
+
+  code: { fontWeight: "bold" },
+  desc: { fontSize: 12, color: "#777" },
+
+  value: { fontWeight: "bold" },
+
   btn: {
     backgroundColor: "#5db1a8",
-    padding: 16,
+    padding: 15,
     borderRadius: 30,
     alignItems: "center",
-    marginTop: 15,
+    marginTop: 10,
   },
-  btnText: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-});
 
+  btnText: { color: "#fff", fontWeight: "bold" },
+});
 // Ccueca@gmail.com
 // TRALALA
